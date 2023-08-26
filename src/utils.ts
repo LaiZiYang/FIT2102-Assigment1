@@ -1,6 +1,6 @@
 import { State, Action } from "./types";
 import { createSvgElement } from "./views";
-import { Constants, Block, StartCubePos } from "./main";
+import { Constants, Block } from "./main";
 
 const svg = document.querySelector("#svgCanvas") as SVGGraphicsElement &
     HTMLElement;
@@ -27,7 +27,7 @@ const tick = (s: State) => {
 
 
 class MoveDown implements Action {
-    apply(s: Readonly<{ gameEnd: boolean; tetromino: Readonly<{ id: string; x: number; y: number; }>[]; }>): Readonly<{ gameEnd: boolean; tetromino: Readonly<{ id: string; x: number; y: number; }>[]; }> {
+    apply(s: Readonly<{ gameEnd: boolean; tetromino: Readonly<{ id: number; x: number; y: number; }>[]; }>): Readonly<{ gameEnd: boolean; tetromino: Readonly<{ id: number; x: number; y: number; }>[]; }> {
         return {
             ...s,
             tetromino: s.tetromino.map(b=> {

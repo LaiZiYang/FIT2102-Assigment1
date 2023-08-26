@@ -10,7 +10,7 @@ export type State = Readonly<{
 }>;
 
 export type TetrominoBLocks = Readonly<{
-  id: string
+  id: number
   x: number
   y: number
 }>

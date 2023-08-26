@@ -41,28 +41,6 @@ export const Block = {
   HEIGHT: Viewport.CANVAS_HEIGHT / Constants.GRID_HEIGHT,
 };
 
-export const StartCubePos = {
-  Block1: {
-    X_COORDINATE: Block.WIDTH*5,
-    Y_COORDINATE: Block.HEIGHT*0
-  },
-
-  Block2: {
-    X_COORDINATE: Block.WIDTH*6,
-    Y_COORDINATE: Block.HEIGHT*0
-  },
-
-  Block3: {
-    X_COORDINATE: Block.WIDTH*5,
-    Y_COORDINATE: Block.HEIGHT*1
-  },
-
-  Block4: {
-    X_COORDINATE: Block.WIDTH*6,
-    Y_COORDINATE: Block.HEIGHT*1
-  }
-  
-}
 
 /** State processing */
 /**
@@ -85,13 +63,15 @@ const tick = (s: State) => {
 
 /** Utility functions */
 const initialTetromino: TetrominoBLocks[] = [
-  {id: "0", x: 4, y: 0}, {id: "1", x: 5, y: 0}, {id: "2", x: 4, y: 1}, {id: "3", x: 5, y: 1}
+  {id: 0, x: 4, y: 0}, {id: 1, x: 5, y: 0}, {id: 2, x: 4, y: 1}, {id: 3, x: 5, y: 1}
 ]
 
 const initialState: State = {
   gameEnd: false,
   tetromino: initialTetromino
 } as const;
+
+
 
 /**
  * This is the function called on page load. Your main game loop
@@ -142,63 +122,29 @@ export function main() {
    */
   const render = (s: State) => {
     
-
     s.tetromino.forEach(b=> {
-      const createBlock = (blocks: TetrominoBLocks) => {
+      const createBlock = (block: TetrominoBLocks) => {
         const v = createSvgElement(svg.namespaceURI, "rect", {
           height: `${Block.HEIGHT}`,
           width: `${Block.WIDTH}`,
-          x: `${Block.WIDTH*blocks.x}`,
-          y: `${Block.HEIGHT*blocks.y}`,
+          x: `${Block.WIDTH*block.x}`,
+          y: `${Block.HEIGHT*block.y}`,
           style: "fill: yellow"
         })
-        v.setAttribute("id", blocks.id)
+        v.setAttribute("id", String(block.id))
         svg.appendChild(v)
         return v
       }
 
-      const v = document.getElementById(b.id) || createBlock(b)
+      const v = document.getElementById(String(b.id)) || createBlock(b)
 
       v.setAttribute("x", String(Block.WIDTH*b.x))
       v.setAttribute("y", String(Block.HEIGHT*b.y))
     })
 
-    // // Add blocks to the main grid canvas
-    // const cube = createSvgElement(svg.namespaceURI, "rect", {
-    //   height: `${Block.HEIGHT}`,
-    //   width: `${Block.WIDTH}`,
-    //   x: "0",
-    //   y: "0",
-    //   style: "fill: green",
-    // });
-    // svg.appendChild(cube);
-    // const cube2 = createSvgElement(svg.namespaceURI, "rect", {
-    //   height: `${Block.HEIGHT}`,
-    //   width: `${Block.WIDTH}`,
-    //   x: `${Block.WIDTH * (3 - 1)}`,
-    //   y: `${Block.HEIGHT * (20 - 1)}`,
-    //   style: "fill: red",
-    // });
-    // svg.appendChild(cube2);
-    // const cube3 = createSvgElement(svg.namespaceURI, "rect", {
-    //   height: `${Block.HEIGHT}`,
-    //   width: `${Block.WIDTH}`,
-    //   x: `${Block.WIDTH * (4 - 1)}`,
-    //   y: `${Block.HEIGHT * (20 - 1)}`,
-    //   style: "fill: red",
-    // });
-    // svg.appendChild(cube3);
-
-    // // Add a block to the preview canvas
-    // const cubePreview = createSvgElement(preview.namespaceURI, "rect", {
-    //   height: `${Block.HEIGHT}`,
-    //   width: `${Block.WIDTH}`,
-    //   x: `${Block.WIDTH * 2}`,
-    //   y: `${Block.HEIGHT}`,
-    //   style: "fill: green",
-    // });
-    // preview.appendChild(cubePreview);
   };
+
+
 
   const source$ = merge(tick$)
     .pipe(scan(tick, initialState))

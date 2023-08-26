@@ -14,13 +14,17 @@ const svg = document.querySelector("#svgCanvas") as SVGGraphicsElement &
  */
 class tick implements Action {
     constructor(public readonly elapsed:number){}
-    apply(s: Readonly<{ gameEnd: boolean; tetromino: Readonly<{ id: number; x: number; y: number; }>[]; }>): Readonly<{ gameEnd: boolean; tetromino: Readonly<{ id: number; x: number; y: number; }>[]; }> {
+    apply(s: State): State {
+        const getBottomBlock = (tetromino: ReadonlyArray<TetrominoBLocks>) => tetromino.reduce((m, b) => b.y > m.y ? {...b} : {...m})
+        const getListOfBottomBlocks = (tetromino: ReadonlyArray<TetrominoBLocks>) => tetromino.filter((b)=> b.y === getBottomBlock(s.tetromino).y)
+        const collidedBottom = () => getListOfBottomBlocks(s.tetromino).filter(b=> b.y === 19).length > 0
         return {
             ...s,
             tetromino: s.tetromino.map(b=> {
                 return {
                     ...b,
-                    y: b.y+1
+                    y: collidedBottom() ? (b.y) : (b.y+1),
+                    placedTetromino: collidedBottom() ? s.placedTetromino.concat(s.tetromino) : s.placedTetromino
                 }
             })
         }
@@ -42,8 +46,8 @@ class tick implements Action {
 
 class MoveLeft implements Action {
     constructor(public readonly changes:number) {}
-    apply(s: Readonly<{ gameEnd: boolean; tetromino: Readonly<{ id: number; x: number; y: number; }>[]; }>): Readonly<{ gameEnd: boolean; tetromino: Readonly<{ id: number; x: number; y: number; }>[]; }> {
-        const getLeftMostBlock = (tetromino: TetrominoBLocks[]) => tetromino.reduce((m, b) => b.x < m.x ? {...b} : {...m})
+    apply(s: State): State {
+        const getLeftMostBlock = (tetromino: ReadonlyArray<TetrominoBLocks>) => tetromino.reduce((m, b) => b.x < m.x ? {...b} : {...m})
         const collidedLeft = () => getLeftMostBlock(s.tetromino).x == 0
         return {
             ...s,
@@ -59,8 +63,8 @@ class MoveLeft implements Action {
 
 class MoveRight implements Action {
     constructor(public readonly changes:number) {}
-    apply(s: Readonly<{ gameEnd: boolean; tetromino: Readonly<{ id: number; x: number; y: number; }>[]; }>): Readonly<{ gameEnd: boolean; tetromino: Readonly<{ id: number; x: number; y: number; }>[]; }> {
-        const getRightmostBlock = (tetromino: TetrominoBLocks[]) => tetromino.reduce((m, b) => b.x > m.x ? {...b} : {...m})
+    apply(s: State): State {
+        const getRightmostBlock = (tetromino: ReadonlyArray<TetrominoBLocks>) => tetromino.reduce((m, b) => b.x > m.x ? {...b} : {...m})
         const collidedRight = () => getRightmostBlock(s.tetromino).x == 9
         return {
             ...s,

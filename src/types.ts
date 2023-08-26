@@ -6,7 +6,8 @@ export type Event = "keydown" | "keyup" | "keypress";
 
 export type State = Readonly<{
   gameEnd: boolean;
-  tetromino: TetrominoBLocks[]
+  tetromino: ReadonlyArray<TetrominoBLocks>
+  placedTetromino: ReadonlyArray<TetrominoBLocks>
 }>;
 
 export type TetrominoBLocks = Readonly<{

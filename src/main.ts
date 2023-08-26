@@ -16,9 +16,9 @@ import "./style.css";
 
 import { fromEvent, interval, merge } from "rxjs";
 import { map, filter, scan } from "rxjs/operators";
-import { Event, State, Key, TetrominoBLocks } from "./types";
+import { Event, State, Key, TetrominoBLocks, Action } from "./types";
 import { hide, show, createSvgElement } from "./views";
-// import { tick } from "./utils";
+import { tick, MoveLeft, MoveRight } from "./utils";
 import { tick$ } from "./observables";
 
 /** Constants */
@@ -42,24 +42,6 @@ export const Block = {
 };
 
 
-/** State processing */
-/**
- * Updates the state by proceeding with one time step.
- *
- * @param s Current state
- * @returns Updated state
- */
-const tick = (s: State) => {
-  return {
-      ...s,
-      tetromino: s.tetromino.map(b=> {
-          return {
-              ...b,
-              y: b.y+1
-          }
-      })
-  }
-};
 
 /** Utility functions */
 const initialTetromino: TetrominoBLocks[] = [
@@ -109,6 +91,20 @@ export function main() {
   const down$ = fromKey("KeyS");
 
   /** Observables */
+const LeftAction = left$.pipe(
+  map(_=> new MoveLeft(-1))
+)
+
+const RightActioin = right$.pipe(
+  map(_=> new MoveRight(1))
+)
+
+const Tick = interval(Constants.TICK_RATE_MS).pipe(
+  map(elapsed=> new tick(elapsed))
+)
+
+const Action$ = merge(LeftAction, RightActioin, Tick)
+
 
   /** Determines the rate of time steps */
   const tick$ = interval(Constants.TICK_RATE_MS);
@@ -138,25 +134,41 @@ export function main() {
 
       const v = document.getElementById(String(b.id)) || createBlock(b)
 
-      v.setAttribute("x", String(Block.WIDTH*b.x))
+      v.setAttribute("x", (b.x > Constants.GRID_WIDTH) ? (String(Block.WIDTH*Constants.GRID_WIDTH)) : (b.x < 0) ? "0" : String(Block.WIDTH*b.x))
+      // v.setAttribute("x", String(Block.WIDTH*b.x))
       v.setAttribute("y", String(Block.HEIGHT*b.y))
     })
 
   };
 
+  const source$ = Action$
+  .pipe(
+    scan((s: State, a: Action)=> a.apply(s), initialState)
+    )
+  .subscribe((s: State) => {
+    render(s);
 
+    if (s.gameEnd) {
+      show(gameover);
+    } else {
+      hide(gameover)
+    }
 
-  const source$ = merge(tick$)
-    .pipe(scan(tick, initialState))
-    .subscribe((s: State) => {
-      render(s);
+  })
 
-      if (s.gameEnd) {
-        show(gameover);
-      } else {
-        hide(gameover);
-      }
-    });
+  // const source$ = merge(tick$)
+  //   .pipe(
+  //     map(t=> new tick(t)),
+  //     scan((s: State, a: Action)=> a.apply(s), initialState))
+  //   .subscribe((s: State) => {
+  //     render(s);
+
+  //     if (s.gameEnd) {
+  //       show(gameover);
+  //     } else {
+  //       hide(gameover);
+  //     }
+  //   });
 }
 
 // The following simply runs your main function on window load.  Make sure to leave it in place.

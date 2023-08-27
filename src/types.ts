@@ -12,6 +12,7 @@ export type State = Readonly<{
   tetromino: ReadonlyArray<TetrominoBLocks>
   placedTetromino: ReadonlyArray<TetrominoBLocks>
   currentBoard: ReadonlyArray<ReadonlyArray<number>>
+  rowToDelete: ReadonlyArray<TetrominoBLocks>
 }>;
 
 export type TetrominoBLocks = Readonly<{

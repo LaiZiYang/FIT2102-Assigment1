@@ -1,4 +1,4 @@
-import { State, Action } from "./types";
+import { State, Action, TetrominoBLocks } from "./types";
 import { createSvgElement } from "./views";
 import { Constants, Block } from "./main";
 
@@ -12,21 +12,8 @@ const svg = document.querySelector("#svgCanvas") as SVGGraphicsElement &
  * @param s Current state
  * @returns Updated state
  */
-const tick = (s: State) => {
-    return {
-        ...s,
-        tetromino: s.tetromino.map(b=> {
-            return {
-                ...b,
-                y: b.y+1
-            }
-        })
-    }
-};
-
-
-
-class MoveDown implements Action {
+class tick implements Action {
+    constructor(public readonly elapsed:number){}
     apply(s: Readonly<{ gameEnd: boolean; tetromino: Readonly<{ id: number; x: number; y: number; }>[]; }>): Readonly<{ gameEnd: boolean; tetromino: Readonly<{ id: number; x: number; y: number; }>[]; }> {
         return {
             ...s,
@@ -39,13 +26,52 @@ class MoveDown implements Action {
         }
     }
 }
-
-// function moveDown(s: State) {
-//     s.tetromino.map(({y})=> y + 1)
+// = (s: State) => {
 //     return {
 //         ...s,
-
+//         tetromino: s.tetromino.map(b=> {
+//             return {
+//                 ...b,
+//                 y: b.y+1
+//             }
+//         })
 //     }
-// }
+// };
 
-export {tick}
+
+
+class MoveLeft implements Action {
+    constructor(public readonly changes:number) {}
+    apply(s: Readonly<{ gameEnd: boolean; tetromino: Readonly<{ id: number; x: number; y: number; }>[]; }>): Readonly<{ gameEnd: boolean; tetromino: Readonly<{ id: number; x: number; y: number; }>[]; }> {
+        const getLeftMostBlock = (tetromino: TetrominoBLocks[]) => tetromino.reduce((m, b) => b.x < m.x ? {...b} : {...m})
+        const collidedLeft = () => getLeftMostBlock(s.tetromino).x == 0
+        return {
+            ...s,
+            tetromino: s.tetromino.map(b=> {
+                return {
+                    ...b,
+                    x: collidedLeft() ? b.x : (b.x+this.changes)
+                }
+            })
+        }
+    }
+}
+
+class MoveRight implements Action {
+    constructor(public readonly changes:number) {}
+    apply(s: Readonly<{ gameEnd: boolean; tetromino: Readonly<{ id: number; x: number; y: number; }>[]; }>): Readonly<{ gameEnd: boolean; tetromino: Readonly<{ id: number; x: number; y: number; }>[]; }> {
+        const getRightmostBlock = (tetromino: TetrominoBLocks[]) => tetromino.reduce((m, b) => b.x > m.x ? {...b} : {...m})
+        const collidedRight = () => getRightmostBlock(s.tetromino).x == 9
+        return {
+            ...s,
+            tetromino: s.tetromino.map(b=> {
+                return {
+                    ...b,
+                    x: collidedRight() ? b.x : (b.x+this.changes)
+                }
+            })
+        }
+    }
+}
+
+export {tick, MoveLeft, MoveRight}

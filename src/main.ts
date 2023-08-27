@@ -45,12 +45,13 @@ export const Block = {
 
 /** Utility functions */
 const initialTetromino: TetrominoBLocks[] = [
-  {id: 0, x: 4, y: 0}, {id: 1, x: 5, y: 0}, {id: 2, x: 4, y: 1}, {id: 3, x: 5, y: 1}
+  {id: 0, x: 4, y: -1}, {id: 1, x: 5, y: -1}, {id: 2, x: 4, y: 0}, {id: 3, x: 5, y: 0}
 ]
 
 const initialState: State = {
   gameEnd: false,
-  tetromino: initialTetromino
+  tetromino: initialTetromino,
+  placedTetromino: []
 } as const;
 
 
@@ -134,7 +135,7 @@ const Action$ = merge(LeftAction, RightActioin, Tick)
 
       const v = document.getElementById(String(b.id)) || createBlock(b)
 
-      v.setAttribute("x", (b.x > Constants.GRID_WIDTH) ? (String(Block.WIDTH*Constants.GRID_WIDTH)) : (b.x < 0) ? "0" : String(Block.WIDTH*b.x))
+      v.setAttribute("x", String(Block.WIDTH*b.x))
       // v.setAttribute("x", String(Block.WIDTH*b.x))
       v.setAttribute("y", String(Block.HEIGHT*b.y))
     })

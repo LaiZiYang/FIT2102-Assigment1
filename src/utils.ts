@@ -59,11 +59,17 @@ class tick implements Action {
 class MoveLeft implements Action {
     constructor(public readonly changes:number) {}
     apply(s: State): State {
+        const mergeMap = <T, U>(
+            a: ReadonlyArray<T>,
+            f: (a: T) => ReadonlyArray<U>
+          ) => Array.prototype.concat(...a.map(f))
         const getLeftMostBlock = (tetromino: ReadonlyArray<TetrominoBLocks>) => tetromino.reduce((m, b) => b.x < m.x ? {...b} : {...m})
+        const allActiveAndPlacedBlocks = () => mergeMap(s.tetromino, b=> s.placedTetromino.map((p=> [b,p])))
+        const collidedBlockWithBlock = () => allActiveAndPlacedBlocks().filter(t => t[0].x-1 == t[1].x && t[0].y == t[1].y).length > 0
         const collidedLeft = () => getLeftMostBlock(s.tetromino).x == 0
         return {
             ...s,
-            tetromino: s.tetromino.map(b=> {
+            tetromino: collidedBlockWithBlock() ? s.tetromino : s.tetromino.map(b=> {
                 return {
                     ...b,
                     x: collidedLeft() ? b.x : (b.x+this.changes)
@@ -76,11 +82,17 @@ class MoveLeft implements Action {
 class MoveRight implements Action {
     constructor(public readonly changes:number) {}
     apply(s: State): State {
+        const mergeMap = <T, U>(
+            a: ReadonlyArray<T>,
+            f: (a: T) => ReadonlyArray<U>
+          ) => Array.prototype.concat(...a.map(f))
         const getRightmostBlock = (tetromino: ReadonlyArray<TetrominoBLocks>) => tetromino.reduce((m, b) => b.x > m.x ? {...b} : {...m})
+        const allActiveAndPlacedBlocks = () => mergeMap(s.tetromino, b=> s.placedTetromino.map((p=> [b,p])))
+        const collidedBlockWithBlock = () => allActiveAndPlacedBlocks().filter(t => t[0].x+1 == t[1].x && t[0].y == t[1].y).length > 0
         const collidedRight = () => getRightmostBlock(s.tetromino).x == 9
         return {
             ...s,
-            tetromino: s.tetromino.map(b=> {
+            tetromino: collidedBlockWithBlock() ? s.tetromino : s.tetromino.map(b=> {
                 return {
                     ...b,
                     x: collidedRight() ? b.x : (b.x+this.changes)

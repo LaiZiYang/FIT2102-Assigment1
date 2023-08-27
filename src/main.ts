@@ -31,7 +31,7 @@ const Viewport = {
 } as const;
 
 export const Constants = {
-  TICK_RATE_MS: 500,
+  TICK_RATE_MS: 100,
   GRID_WIDTH: 10,
   GRID_HEIGHT: 20,
 } as const;
@@ -53,7 +53,8 @@ const initialState: State = {
   gameEnd: false,
   tetromino: initialTetromino,
   placedTetromino: [], 
-  currentBoard: Array.from({ length: Constants.GRID_HEIGHT }, () => [...Array(Constants.GRID_WIDTH)])
+  currentBoard: Array.from({ length: Constants.GRID_HEIGHT }, () => [...Array(Constants.GRID_WIDTH)]),
+  rowToDelete: []
 } as const;
 
 
@@ -120,7 +121,10 @@ const Action$ = merge(LeftAction, RightActioin, Tick)
    * @param s Current state
    */
   const render = (s: State) => {
-    // levelText.textContent = (String(s.placedTetromino))
+    if (s.rowToDelete.length>0) {
+      levelText.textContent = (String(s.rowToDelete[5].id))
+    }
+    
     s.placedTetromino.forEach(b=> {
       const v = createSvgElement(svg.namespaceURI, "rect", {
         height: `${Block.HEIGHT}`,
@@ -154,6 +158,12 @@ const Action$ = merge(LeftAction, RightActioin, Tick)
       v.setAttribute("y", String(Block.HEIGHT*b.y))
     })
 
+    
+    s.rowToDelete.forEach(b=> {
+      const v = document.getElementById(String(b.id))
+      if(v) svg.removeChild(v) 
+      // if(v) v.setAttribute("style", "fill: black")
+    })
   };
 
   const source$ = Action$

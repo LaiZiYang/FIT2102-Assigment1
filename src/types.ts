@@ -1,3 +1,5 @@
+import { Constants } from "./main";
+
 /** User input */
 
 export type Key = "KeyS" | "KeyA" | "KeyD";
@@ -5,9 +7,11 @@ export type Key = "KeyS" | "KeyA" | "KeyD";
 export type Event = "keydown" | "keyup" | "keypress";
 
 export type State = Readonly<{
+  time: number;
   gameEnd: boolean;
   tetromino: ReadonlyArray<TetrominoBLocks>
   placedTetromino: ReadonlyArray<TetrominoBLocks>
+  currentBoard: ReadonlyArray<ReadonlyArray<number>>
 }>;
 
 export type TetrominoBLocks = Readonly<{

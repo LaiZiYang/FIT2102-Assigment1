@@ -1,6 +1,6 @@
 import { State, Action, TetrominoBLocks } from "./types";
 import { createSvgElement } from "./views";
-import { Constants, Block } from "./main";
+import { Constants, Block, initialTetromino } from "./main";
 
 const svg = document.querySelector("#svgCanvas") as SVGGraphicsElement &
     HTMLElement;
@@ -15,18 +15,30 @@ const svg = document.querySelector("#svgCanvas") as SVGGraphicsElement &
 class tick implements Action {
     constructor(public readonly elapsed:number){}
     apply(s: State): State {
+        const mergeMap = <T, U>(
+            a: ReadonlyArray<T>,
+            f: (a: T) => ReadonlyArray<U>
+          ) => Array.prototype.concat(...a.map(f))
         const getBottomBlock = (tetromino: ReadonlyArray<TetrominoBLocks>) => tetromino.reduce((m, b) => b.y > m.y ? {...b} : {...m})
-        const getListOfBottomBlocks = (tetromino: ReadonlyArray<TetrominoBLocks>) => tetromino.filter((b)=> b.y === getBottomBlock(s.tetromino).y)
-        const collidedBottom = () => getListOfBottomBlocks(s.tetromino).filter(b=> b.y === 19).length > 0
+        const getAllBottomBlocks = (tetromino: ReadonlyArray<TetrominoBLocks>) => tetromino.filter((b)=> b.y === getBottomBlock(s.tetromino).y)
+        const collidedBottom = () => getAllBottomBlocks(s.tetromino).filter(b=> b.y === 19).length > 0
+        const allBottomAndPlacedBlocks = () => mergeMap(getAllBottomBlocks(s.tetromino), b=> s.placedTetromino.map(p => [b,p]))
+        const collidedBlockWithBlock = () => allBottomAndPlacedBlocks().filter(t => t[0].y+1 === t[1].y && t[0].x == t[1].x).length > 0
+        const createNewTetromino = (time: number) => {
+            return [
+                {...initialTetromino[0], id: time}, {...initialTetromino[1], id: time+1}, {...initialTetromino[2], id: time+2}, {...initialTetromino[3], id: time+3}
+            ]
+        }
         return {
             ...s,
-            tetromino: s.tetromino.map(b=> {
+            tetromino: !collidedBottom () ? (collidedBlockWithBlock() ? createNewTetromino(s.time) : s.tetromino.map(b=> {
                 return {
                     ...b,
-                    y: collidedBottom() ? (b.y) : (b.y+1),
-                    placedTetromino: collidedBottom() ? s.placedTetromino.concat(s.tetromino) : s.placedTetromino
+                    y: collidedBottom() ? (b.y) : (b.y+1)
                 }
-            })
+            })) : createNewTetromino(s.time),
+            time: s.time + 1,
+            placedTetromino: collidedBottom() ? (s.placedTetromino.concat(s.tetromino)) : (collidedBlockWithBlock() ? s.placedTetromino.concat(s.tetromino) : s.placedTetromino)
         }
     }
 }

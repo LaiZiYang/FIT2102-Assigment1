@@ -44,14 +44,16 @@ export const Block = {
 
 
 /** Utility functions */
-const initialTetromino: TetrominoBLocks[] = [
+export const initialTetromino: TetrominoBLocks[] = [
   {id: 0, x: 4, y: -1}, {id: 1, x: 5, y: -1}, {id: 2, x: 4, y: 0}, {id: 3, x: 5, y: 0}
 ]
 
 const initialState: State = {
+  time: 0,
   gameEnd: false,
   tetromino: initialTetromino,
-  placedTetromino: []
+  placedTetromino: [], 
+  currentBoard: Array.from({ length: Constants.GRID_HEIGHT }, () => [...Array(Constants.GRID_WIDTH)])
 } as const;
 
 
@@ -118,6 +120,18 @@ const Action$ = merge(LeftAction, RightActioin, Tick)
    * @param s Current state
    */
   const render = (s: State) => {
+    // levelText.textContent = (String(s.placedTetromino))
+    s.placedTetromino.forEach(b=> {
+      const v = createSvgElement(svg.namespaceURI, "rect", {
+        height: `${Block.HEIGHT}`,
+        width: `${Block.WIDTH}`,
+        x: `${Block.WIDTH*b.x}`,
+        y: `${Block.HEIGHT*b.y}`,
+        style: "fill: red"
+      })
+      v.setAttribute("id", String(b.id))
+      svg.appendChild(v)
+    })
     
     s.tetromino.forEach(b=> {
       const createBlock = (block: TetrominoBLocks) => {

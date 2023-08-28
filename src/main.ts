@@ -31,7 +31,7 @@ const Viewport = {
 } as const;
 
 export const Constants = {
-  TICK_RATE_MS: 100,
+  TICK_RATE_MS: 250,
   GRID_WIDTH: 10,
   GRID_HEIGHT: 20,
 } as const;
@@ -121,11 +121,20 @@ const Action$ = merge(LeftAction, RightActioin, Tick)
    * @param s Current state
    */
   const render = (s: State) => {
-    if (s.rowToDelete.length>0) {
-      levelText.textContent = (String(s.rowToDelete[5].id))
-    }
+    levelText.textContent = (String(s.time))
     
+    // scoreText.textContent = (String(s.placedTetromino.length))
+    
+    s.rowToDelete.forEach(b=> {
+      const v = document.getElementById(String(b.id))
+      scoreText.textContent = (String(Boolean(v)))
+      if(v) {svg.removeChild(v) }
+      // if(v) v.setAttribute("style", "fill: black")
+    })
+
     s.placedTetromino.forEach(b=> {
+      const att = document.getElementById(String(b.id))
+      if (att) {svg.removeChild(att)}
       const v = createSvgElement(svg.namespaceURI, "rect", {
         height: `${Block.HEIGHT}`,
         width: `${Block.WIDTH}`,
@@ -151,19 +160,18 @@ const Action$ = merge(LeftAction, RightActioin, Tick)
         return v
       }
 
-      const v = document.getElementById(String(b.id)) || createBlock(b)
-
-      v.setAttribute("x", String(Block.WIDTH*b.x))
+      const v = document.getElementById(String(b.id))
+      if (!v) {createBlock(b)} else {
+        v.setAttribute("x", String(Block.WIDTH*b.x))
       // v.setAttribute("x", String(Block.WIDTH*b.x))
       v.setAttribute("y", String(Block.HEIGHT*b.y))
+      }
+
+      
     })
 
     
-    s.rowToDelete.forEach(b=> {
-      const v = document.getElementById(String(b.id))
-      if(v) svg.removeChild(v) 
-      // if(v) v.setAttribute("style", "fill: black")
-    })
+    
   };
 
   const source$ = Action$
@@ -180,20 +188,6 @@ const Action$ = merge(LeftAction, RightActioin, Tick)
     }
 
   })
-
-  // const source$ = merge(tick$)
-  //   .pipe(
-  //     map(t=> new tick(t)),
-  //     scan((s: State, a: Action)=> a.apply(s), initialState))
-  //   .subscribe((s: State) => {
-  //     render(s);
-
-  //     if (s.gameEnd) {
-  //       show(gameover);
-  //     } else {
-  //       hide(gameover);
-  //     }
-  //   });
 }
 
 // The following simply runs your main function on window load.  Make sure to leave it in place.

@@ -44,14 +44,35 @@ export const Block = {
 
 
 /** Utility functions */
-export const initialTetromino: TetrominoBLocks[] = [
+export const oTetromino: TetrominoBLocks[] = [
   {id: 0, x: 4, y: -1}, {id: 1, x: 5, y: -1}, {id: 2, x: 4, y: 0}, {id: 3, x: 5, y: 0}
+  ]
+
+export const LTetromino: TetrominoBLocks[] = [
+  {id: 0, x: 4, y: 0}, {id: 1, x: 4, y: 1}, {id: 2, x: 4, y: 2}, {id: 3, x: 5, y: 2}
 ]
+
+export const JTetromino: TetrominoBLocks[] = [
+  {id: 0, x: 5, y: 0}, {id: 1, x: 5, y: 1}, {id: 2, x: 5, y: 2}, {id: 3, x: 4, y: 2}
+]
+
+export const lTetromino: TetrominoBLocks[] = [
+  {id: 0, x: 4, y: 0}, {id: 1, x: 4, y: 1}, {id: 2, x: 4, y: 2}, {id: 3, x: 4, y: 3}
+]
+
+export const sTetromino: TetrominoBLocks[] = [
+  {id: 0, x: 4, y: 1}, {id: 1, x: 5, y: 1}, {id: 2, x: 5, y: 0}, {id: 3, x: 6, y: 0}
+]
+
+export const zTetromino: TetrominoBLocks[] = [
+  {id: 0, x: 4, y: 0}, {id: 1, x: 5, y: 0}, {id: 2, x: 5, y: 1}, {id: 3, x: 6, y: 1}
+]
+  
 
 const initialState: State = {
   time: 0,
   gameEnd: false,
-  tetromino: initialTetromino,
+  tetromino: oTetromino,
   placedTetromino: [], 
   currentBoard: Array.from({ length: Constants.GRID_HEIGHT }, () => [...Array(Constants.GRID_WIDTH)]),
   rowToDelete: []
@@ -121,7 +142,7 @@ const Action$ = merge(LeftAction, RightActioin, Tick)
    * @param s Current state
    */
   const render = (s: State) => {
-    levelText.textContent = (String(s.time))
+    levelText.textContent = (String(s.placedTetromino.length))
     
     // scoreText.textContent = (String(s.placedTetromino.length))
     
@@ -133,17 +154,12 @@ const Action$ = merge(LeftAction, RightActioin, Tick)
     })
 
     s.placedTetromino.forEach(b=> {
-      const att = document.getElementById(String(b.id))
-      if (att) {svg.removeChild(att)}
-      const v = createSvgElement(svg.namespaceURI, "rect", {
-        height: `${Block.HEIGHT}`,
-        width: `${Block.WIDTH}`,
-        x: `${Block.WIDTH*b.x}`,
-        y: `${Block.HEIGHT*b.y}`,
-        style: "fill: red"
-      })
-      v.setAttribute("id", String(b.id))
-      svg.appendChild(v)
+      const v = document.getElementById(String(b.id))
+      if (v) {
+        v.setAttribute("x", String(Block.WIDTH*b.x))
+        v.setAttribute("y", String(Block.HEIGHT*b.y))
+        v.setAttribute("style", "fill: red")
+      }
     })
     
     s.tetromino.forEach(b=> {
@@ -163,7 +179,6 @@ const Action$ = merge(LeftAction, RightActioin, Tick)
       const v = document.getElementById(String(b.id))
       if (!v) {createBlock(b)} else {
         v.setAttribute("x", String(Block.WIDTH*b.x))
-      // v.setAttribute("x", String(Block.WIDTH*b.x))
       v.setAttribute("y", String(Block.HEIGHT*b.y))
       }
 

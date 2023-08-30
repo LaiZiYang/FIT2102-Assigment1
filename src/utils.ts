@@ -55,10 +55,13 @@ class tick implements Action {
         const getRowsNumberToDelete = () => rowsToDelete().reduce((a: ReadonlyArray<number>, b: TetrominoBLocks)=> a.includes(b.y) ? a : a.concat([b.y]), [])
         const fixedBlocks = () => rowsToDelete().length > 0 ? getRowsNumberToDelete().reduce((a,c) => updateBlocks(a, c, (b) => ({...b, y: b.y + 1})), rowsToRemain()) : rowsToRemain()
         
-        
+        // game end logic
+        const getTopYCoordinate = () => s.placedTetromino.length > 0 ? s.placedTetromino.reduce((m, b) => b.y < m.y ? {...b} : {...m}).y : false
+        const collidedTop = () => getTopYCoordinate() === 0
         // return new state
         return {
             ...s,
+            gameEnd: collidedTop(), 
             tetromino: collidedBottom () || collidedBlockWithBlock() ? createNewTetromino(s.time).blocks : s.tetromino.map(b=> {
                 return {
                     ...b,

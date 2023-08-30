@@ -16,7 +16,7 @@ import "./style.css";
 
 import { fromEvent, interval, merge } from "rxjs";
 import { map, filter, scan } from "rxjs/operators";
-import { Event, State, Key, TetrominoBLocks, Action } from "./types";
+import { Event, State, Key, TetrominoBLocks, Action, Tetromino } from "./types";
 import { hide, show, createSvgElement } from "./views";
 import { tick, MoveLeft, MoveRight } from "./utils";
 import { tick$ } from "./observables";
@@ -44,9 +44,9 @@ export const Block = {
 
 
 /** Utility functions */
-export const oTetromino: TetrominoBLocks[] = [
-  {id: 0, x: 4, y: -1}, {id: 1, x: 5, y: -1}, {id: 2, x: 4, y: 0}, {id: 3, x: 5, y: 0}
-  ]
+export const oTetromino: Tetromino = {
+  tetrominoId: 0,
+  blocks: [{id: 0, x: 4, y: -1}, {id: 1, x: 5, y: -1}, {id: 2, x: 4, y: 0}, {id: 3, x: 5, y: 0}]}
 
 export const LTetromino: TetrominoBLocks[] = [
   {id: 0, x: 4, y: 0}, {id: 1, x: 4, y: 1}, {id: 2, x: 4, y: 2}, {id: 3, x: 5, y: 2}
@@ -72,7 +72,7 @@ export const zTetromino: TetrominoBLocks[] = [
 const initialState: State = {
   time: 0,
   gameEnd: false,
-  tetromino: oTetromino,
+  tetromino: oTetromino.blocks,
   placedTetromino: [], 
   currentBoard: Array.from({ length: Constants.GRID_HEIGHT }, () => [...Array(Constants.GRID_WIDTH)]),
   rowToDelete: []

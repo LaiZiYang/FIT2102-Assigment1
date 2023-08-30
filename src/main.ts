@@ -31,7 +31,7 @@ const Viewport = {
 } as const;
 
 export const Constants = {
-  TICK_RATE_MS: 250,
+  TICK_RATE_MS: 100,
   GRID_WIDTH: 10,
   GRID_HEIGHT: 20,
 } as const;
@@ -162,18 +162,19 @@ const Action$ = merge(LeftAction, RightActioin, Tick)
       }
     })
     
+
     s.tetromino.forEach(b=> {
-      const createBlock = (block: TetrominoBLocks) => {
-        const v = createSvgElement(svg.namespaceURI, "rect", {
-          height: `${Block.HEIGHT}`,
-          width: `${Block.WIDTH}`,
-          x: `${Block.WIDTH*block.x}`,
-          y: `${Block.HEIGHT*block.y}`,
-          style: "fill: yellow"
-        })
-        v.setAttribute("id", String(block.id))
-        svg.appendChild(v)
-        return v
+    const createBlock = (block: TetrominoBLocks) => {
+      const v = createSvgElement(svg.namespaceURI, "rect", {
+        height: `${Block.HEIGHT}`,
+        width: `${Block.WIDTH}`,
+        x: `${Block.WIDTH*block.x}`,
+        y: `${Block.HEIGHT*block.y}`,
+        style: "fill: yellow"
+      })
+      v.setAttribute("id", String(block.id))
+      svg.appendChild(v)
+      return v
       }
 
       const v = document.getElementById(String(b.id))
@@ -183,11 +184,10 @@ const Action$ = merge(LeftAction, RightActioin, Tick)
       }
 
       
-    })
-
+      })
     
+  }
     
-  };
 
   const source$ = Action$
   .pipe(

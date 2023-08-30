@@ -47,7 +47,7 @@ class tick implements Action {
         const rowsOfBlocksToBeChecked = () => rowsWithTetromino().map(r=> placedBlocks().filter(b=> b.y === r))
         
         // determine which rows to delete/remain
-        const rowsToDelete = () => rowsOfBlocksToBeChecked().filter(a => a.length === 10).reduce((a, b) => a.concat(b), [])
+        const rowsToDelete = () => rowsOfBlocksToBeChecked().filter(a => a.length === 10 && a[0].x != a[8].x).reduce((a, b) => a.concat(b), [])
         const rowsToRemain = () => rowsOfBlocksToBeChecked().filter(a => a.length < 10).reduce((a, b) => a.concat(b), [])
 
         // shift down rows above the deleted ones
@@ -56,13 +56,15 @@ class tick implements Action {
         const fixedBlocks = () => rowsToDelete().length > 0 ? getRowsNumberToDelete().reduce((a,c) => updateBlocks(a, c, (b) => ({...b, y: b.y + 1})), rowsToRemain()) : rowsToRemain()
         
         // game end logic
-        const getTopYCoordinate = () => s.placedTetromino.length > 0 ? s.placedTetromino.reduce((m, b) => b.y < m.y ? {...b} : {...m}).y : false
-        const collidedTop = () => getTopYCoordinate() === 0
+        const getTopYCoordinate = () => s.placedTetromino.reduce((m, b) => b.y < m.y ? {...b} : {...m}).y
+        const collidedTop = () => s.placedTetromino.length > 0 ? getTopYCoordinate() === 0 : false
+        const gameEnd = () => collidedTop() || s.gameEnd
+        
         // return new state
         return {
             ...s,
-            gameEnd: collidedTop(), 
-            tetromino: collidedBottom () || collidedBlockWithBlock() ? createNewTetromino(s.time).blocks : s.tetromino.map(b=> {
+            gameEnd: gameEnd(), 
+            tetromino: (collidedBottom () || collidedBlockWithBlock()) && !s.gameEnd ? createNewTetromino(s.time).blocks : s.tetromino.map(b=> {
                 return {
                     ...b,
                     y: collidedBottom() ? (b.y) : (b.y+1)

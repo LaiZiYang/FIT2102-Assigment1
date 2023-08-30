@@ -18,7 +18,7 @@ import { fromEvent, interval, merge } from "rxjs";
 import { map, filter, scan } from "rxjs/operators";
 import { Event, State, Key, TetrominoBLocks, Action, Tetromino } from "./types";
 import { hide, show, createSvgElement } from "./views";
-import { tick, MoveLeft, MoveRight } from "./utils";
+import { tick, MoveLeft, MoveRight, Restart } from "./utils";
 import { tick$ } from "./observables";
 
 /** Constants */
@@ -45,38 +45,45 @@ export const Block = {
 
 /** Utility functions */
 export const oTetromino: Tetromino = {
-  tetrominoId: 0,
-  blocks: [{id: 0, x: 4, y: -1}, {id: 1, x: 5, y: -1}, {id: 2, x: 4, y: 0}, {id: 3, x: 5, y: 0}]}
+  tetrominoId: 1,
+  blocks: [{id: 0, x: 4, y: -1}, {id: 1, x: 5, y: -1}, {id: 2, x: 4, y: 0}, {id: 3, x: 5, y: 0}]
+}
 
-export const LTetromino: TetrominoBLocks[] = [
-  {id: 0, x: 4, y: 0}, {id: 1, x: 4, y: 1}, {id: 2, x: 4, y: 2}, {id: 3, x: 5, y: 2}
-]
+export const LTetromino: Tetromino = {
+  tetrominoId: 2,
+  blocks: [{id: 0, x: 4, y: -1}, {id: 1, x: 4, y: 0}, {id: 2, x: 4, y: 1}, {id: 3, x: 5, y: 1}]
+}
 
-export const JTetromino: TetrominoBLocks[] = [
-  {id: 0, x: 5, y: 0}, {id: 1, x: 5, y: 1}, {id: 2, x: 5, y: 2}, {id: 3, x: 4, y: 2}
-]
+export const JTetromino: Tetromino = {
+  tetrominoId: 3,
+  blocks: [{id: 0, x: 5, y: -1}, {id: 1, x: 5, y: 0}, {id: 2, x: 5, y: 1}, {id: 3, x: 4, y: 1}]
+}
 
-export const lTetromino: TetrominoBLocks[] = [
-  {id: 0, x: 4, y: 0}, {id: 1, x: 4, y: 1}, {id: 2, x: 4, y: 2}, {id: 3, x: 4, y: 3}
-]
+export const lTetromino: Tetromino = {
+  tetrominoId: 4,
+  blocks: [{id: 0, x: 4, y: -1}, {id: 1, x: 4, y: 0}, {id: 2, x: 4, y: 1}, {id: 3, x: 4, y: 2}]
+}
 
-export const sTetromino: TetrominoBLocks[] = [
-  {id: 0, x: 4, y: 1}, {id: 1, x: 5, y: 1}, {id: 2, x: 5, y: 0}, {id: 3, x: 6, y: 0}
-]
+export const sTetromino: Tetromino = {
+  tetrominoId: 5,
+  blocks: [{id: 0, x: 5, y: -1}, {id: 1, x: 6, y: -1}, {id: 2, x: 4, y: 0}, {id: 3, x: 5, y: 0}]
+}
 
-export const zTetromino: TetrominoBLocks[] = [
-  {id: 0, x: 4, y: 0}, {id: 1, x: 5, y: 0}, {id: 2, x: 5, y: 1}, {id: 3, x: 6, y: 1}
-]
+export const zTetromino: Tetromino = {
+  tetrominoId: 6,
+  blocks: [{id: 0, x: 4, y: -1}, {id: 1, x: 5, y: -1}, {id: 2, x: 5, y: 0}, {id: 3, x: 6, y: 0}]
+}
   
 
-const initialState: State = {
+export const initialState: State = {
   time: 0,
   gameEnd: false,
   tetromino: oTetromino.blocks,
   placedTetromino: [], 
-  currentBoard: Array.from({ length: Constants.GRID_HEIGHT }, () => [...Array(Constants.GRID_WIDTH)]),
   rowToDelete: [],
-  score: 0
+  score: 0,
+  highScore: 0,
+  seed: 0
 } as const;
 
 
@@ -95,6 +102,9 @@ export function main() {
     HTMLElement;
   const container = document.querySelector("#main") as HTMLElement;
 
+  const restart = document.getElementById("restartBtn") as HTMLElement
+  
+
   svg.setAttribute("height", `${Viewport.CANVAS_HEIGHT}`);
   svg.setAttribute("width", `${Viewport.CANVAS_WIDTH}`);
   preview.setAttribute("height", `${Viewport.PREVIEW_HEIGHT}`);
@@ -104,7 +114,6 @@ export function main() {
   const levelText = document.querySelector("#levelText") as HTMLElement;
   const scoreText = document.querySelector("#scoreText") as HTMLElement;
   const highScoreText = document.querySelector("#highScoreText") as HTMLElement;
-
   /** User input */
 
   const key$ = fromEvent<KeyboardEvent>(document, "keypress");
@@ -115,6 +124,7 @@ export function main() {
   const left$ = fromKey("KeyA");
   const right$ = fromKey("KeyD");
   const down$ = fromKey("KeyS");
+  const restart$ = fromEvent(restart, "click")
 
   /** Observables */
 const LeftAction = left$.pipe(
@@ -129,7 +139,11 @@ const Tick = interval(Constants.TICK_RATE_MS).pipe(
   map(elapsed=> new tick(elapsed))
 )
 
-const Action$ = merge(LeftAction, RightActioin, Tick)
+const RestartAction = restart$.pipe(
+  map(_=> new Restart())
+)
+
+const Action$ = merge(LeftAction, RightActioin, Tick, RestartAction)
 
 
   /** Determines the rate of time steps */
@@ -143,9 +157,9 @@ const Action$ = merge(LeftAction, RightActioin, Tick)
    * @param s Current state
    */
   const render = (s: State) => {
-    levelText.textContent = (String(s.placedTetromino.length))
+    // levelText.textContent = (String(s.placedTetromino.length))
     scoreText.textContent = (String(s.score))
-    
+    highScoreText.textContent = String(s.highScore)
     // scoreText.textContent = (String(s.placedTetromino.length))
     
     s.rowToDelete.forEach(b=> {
@@ -200,6 +214,7 @@ const Action$ = merge(LeftAction, RightActioin, Tick)
 
     if (s.gameEnd) {
       show(gameover);
+
     } else {
       hide(gameover)
     }

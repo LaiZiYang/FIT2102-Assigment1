@@ -1,6 +1,6 @@
 import { State, Action, TetrominoBLocks, Tetromino } from "./types";
 import { createSvgElement } from "./views";
-import { Constants, Block, oTetromino } from "./main";
+import { Constants, Block, oTetromino, initialState } from "./main";
 
 const svg = document.querySelector("#svgCanvas") as SVGGraphicsElement &
     HTMLElement;
@@ -59,6 +59,7 @@ class tick implements Action {
         const getTopYCoordinate = () => s.placedTetromino.reduce((m, b) => b.y < m.y ? {...b} : {...m}).y
         const collidedTop = () => s.placedTetromino.length > 0 ? getTopYCoordinate() === 0 : false
         const gameEnd = () => collidedTop() || s.gameEnd
+        const evaluateHighScore = () => s.score > s.highScore ? s.score : s.highScore
         
         // return new state
         return {
@@ -73,7 +74,8 @@ class tick implements Action {
             time: this.elapsed,
             rowToDelete: blocksToDelete(),
             placedTetromino: fixedBlocks(), 
-            score: gameEnd() ? s.score : s.score + blocksToDelete().length
+            score: gameEnd() ? s.score : s.score + blocksToDelete().length,
+            highScore: evaluateHighScore()
         }
     }
 }
@@ -132,4 +134,33 @@ class MoveRight implements Action {
     }
 }
 
-export {tick, MoveLeft, MoveRight}
+    class Restart implements Action {
+        constructor() {}
+        apply(s: State):State {
+            return {
+                ...initialState,
+                rowToDelete: s.tetromino.concat(s.placedTetromino),
+                highScore: s.highScore
+            }
+        }
+    }
+
+    abstract class RNG {
+        private static m = 0x80000000; // 2**31
+        private static a = 1103515245;
+        private static c = 12345;
+      
+        /**
+         * Call `hash` repeatedly to generate the sequence of hashes.
+         * @param seed
+         * @returns a hash of the seed
+         */
+        public static hash = (seed: number) => (RNG.a * seed + RNG.c) % RNG.m;
+      
+        /**
+         * Takes hash value and scales it to the range [-1, 1]
+         */
+        public static scale = (hash: number) => ((hash) / (RNG.m - 1)) * 5 + 1;
+      }
+
+export {tick, MoveLeft, MoveRight, Restart, RNG}

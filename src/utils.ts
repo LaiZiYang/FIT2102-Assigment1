@@ -47,7 +47,7 @@ class tick implements Action {
         const rowsOfBlocksToBeChecked = () => rowsWithTetromino().map(r=> placedBlocks().filter(b=> b.y === r))
         
         // determine which rows to delete/remain
-        const blocksToDelete = () => rowsOfBlocksToBeChecked().filter(a => a.length === 10 && a[0].x != a[8].x).reduce((a, b) => a.concat(b), [])
+        const blocksToDelete = () => rowsOfBlocksToBeChecked().filter(a => a.length === 10).reduce((a, b) => a.concat(b), [])
         const blocksToRemain = () => rowsOfBlocksToBeChecked().filter(a => a.length < 10).reduce((a, b) => a.concat(b), [])
 
         // shift down rows above the deleted ones

@@ -47,13 +47,13 @@ class tick implements Action {
         const rowsOfBlocksToBeChecked = () => rowsWithTetromino().map(r=> placedBlocks().filter(b=> b.y === r))
         
         // determine which rows to delete/remain
-        const rowsToDelete = () => rowsOfBlocksToBeChecked().filter(a => a.length === 10 && a[0].x != a[8].x).reduce((a, b) => a.concat(b), [])
-        const rowsToRemain = () => rowsOfBlocksToBeChecked().filter(a => a.length < 10).reduce((a, b) => a.concat(b), [])
+        const blocksToDelete = () => rowsOfBlocksToBeChecked().filter(a => a.length === 10 && a[0].x != a[8].x).reduce((a, b) => a.concat(b), [])
+        const blocksToRemain = () => rowsOfBlocksToBeChecked().filter(a => a.length < 10).reduce((a, b) => a.concat(b), [])
 
         // shift down rows above the deleted ones
         const updateBlocks = (a: TetrominoBLocks[],r: number, f: (n: TetrominoBLocks) => TetrominoBLocks) => a.map(b=> b.y < r ? f(b) : b)
-        const getRowsNumberToDelete = () => rowsToDelete().reduce((a: ReadonlyArray<number>, b: TetrominoBLocks)=> a.includes(b.y) ? a : a.concat([b.y]), [])
-        const fixedBlocks = () => rowsToDelete().length > 0 ? getRowsNumberToDelete().reduce((a,c) => updateBlocks(a, c, (b) => ({...b, y: b.y + 1})), rowsToRemain()) : rowsToRemain()
+        const getRowsNumberToDelete = () => blocksToDelete().reduce((a: ReadonlyArray<number>, b: TetrominoBLocks)=> a.includes(b.y) ? a : a.concat([b.y]), [])
+        const fixedBlocks = () => blocksToDelete().length > 0 ? getRowsNumberToDelete().reduce((a,c) => updateBlocks(a, c, (b) => ({...b, y: b.y + 1})), blocksToRemain()) : blocksToRemain()
         
         // game end logic
         const getTopYCoordinate = () => s.placedTetromino.reduce((m, b) => b.y < m.y ? {...b} : {...m}).y
@@ -71,8 +71,9 @@ class tick implements Action {
                 }
             }), 
             time: this.elapsed,
-            rowToDelete: rowsToDelete(),
-            placedTetromino: fixedBlocks()
+            rowToDelete: blocksToDelete(),
+            placedTetromino: fixedBlocks(), 
+            score: gameEnd() ? s.score : s.score + blocksToDelete().length
         }
     }
 }

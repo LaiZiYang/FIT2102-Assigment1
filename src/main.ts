@@ -75,7 +75,8 @@ const initialState: State = {
   tetromino: oTetromino.blocks,
   placedTetromino: [], 
   currentBoard: Array.from({ length: Constants.GRID_HEIGHT }, () => [...Array(Constants.GRID_WIDTH)]),
-  rowToDelete: []
+  rowToDelete: [],
+  score: 0
 } as const;
 
 
@@ -143,12 +144,13 @@ const Action$ = merge(LeftAction, RightActioin, Tick)
    */
   const render = (s: State) => {
     levelText.textContent = (String(s.placedTetromino.length))
+    scoreText.textContent = (String(s.score))
     
     // scoreText.textContent = (String(s.placedTetromino.length))
     
     s.rowToDelete.forEach(b=> {
       const v = document.getElementById(String(b.id))
-      scoreText.textContent = (String(Boolean(v)))
+      
       if(v) {svg.removeChild(v) }
       // if(v) v.setAttribute("style", "fill: black")
     })

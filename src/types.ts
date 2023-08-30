@@ -13,6 +13,7 @@ export type State = Readonly<{
   placedTetromino: ReadonlyArray<TetrominoBLocks>
   currentBoard: ReadonlyArray<ReadonlyArray<number>>
   rowToDelete: ReadonlyArray<TetrominoBLocks>
+  score: number
 }>;
 
 export type TetrominoBLocks = Readonly<{

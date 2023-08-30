@@ -21,6 +21,11 @@ export type TetrominoBLocks = Readonly<{
   y: number
 }>
 
+export type Tetromino = Readonly<{
+  tetrominoId: number
+  blocks: ReadonlyArray<TetrominoBLocks>
+}>
+
 export interface Action {
   apply(s: State): State
 }

@@ -21,6 +21,7 @@ export type TetrominoBLocks = Readonly<{
   id: number
   x: number
   y: number
+  fill: string
 }>
 
 export type Tetromino = Readonly<{

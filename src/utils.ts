@@ -1,6 +1,6 @@
 import { State, Action, TetrominoBLocks, Tetromino } from "./types";
 import { createSvgElement } from "./views";
-import { Constants, Block, oTetromino, initialState } from "./main";
+import { Constants, Block, oTetromino, initialState, TetrominoList } from "./main";
 
 const svg = document.querySelector("#svgCanvas") as SVGGraphicsElement &
     HTMLElement;
@@ -35,7 +35,9 @@ class tick implements Action {
         const collidedBottom = () => collidedBottomBound() || collidedBlockWithBlock()
 
         // fuction to create new Tetromino
-        const createNewTetromino = (time: number): Tetromino => {
+        const nextTetromino = (id: number) => ({...TetrominoList.reduce((r, t) => t.tetrominoId === id ? t : r)})
+        const createNewTetromino = (time: number, id: number): Tetromino => {
+            return {...nextTetromino(id), blocks: nextTetromino(id).blocks.reduce((a: ReadonlyArray<TetrominoBLocks>,c:TetrominoBLocks) => a.concat([{...c, id: time + a.length}]), [])}
             return {...oTetromino, 
                     blocks: oTetromino.blocks.reduce((a: ReadonlyArray<TetrominoBLocks>,c:TetrominoBLocks) => a.concat([{...c, id: time + a.length}]), [])
                     }
@@ -56,16 +58,18 @@ class tick implements Action {
         const fixedBlocks = () => blocksToDelete().length > 0 ? getRowsNumberToDelete().reduce((a,c) => updateBlocks(a, c, (b) => ({...b, y: b.y + 1})), blocksToRemain()) : blocksToRemain()
         
         // game end logic
-        const getTopYCoordinate = () => s.placedTetromino.reduce((m, b) => b.y < m.y ? {...b} : {...m}).y
-        const collidedTop = () => s.placedTetromino.length > 0 ? getTopYCoordinate() === 0 : false
+        const getTopYCoordinate = () => s.placedTetromino.reduce((m, b) => b.y <= m.y ? {...b} : {...m}).y
+        const collidedTop = () => s.placedTetromino.length > 0 ? getTopYCoordinate() === -1 : false
         const gameEnd = () => collidedTop() || s.gameEnd
         const evaluateHighScore = () => s.score > s.highScore ? s.score : s.highScore
+
+        const generateTetrominoId = () => Math.floor(RNG.scale(RNG.hash(s.seed)))
         
         // return new state
         return {
             ...s,
             gameEnd: gameEnd(), 
-            tetromino: (collidedBottom () || collidedBlockWithBlock()) && !s.gameEnd ? createNewTetromino(s.time).blocks : s.tetromino.map(b=> {
+            tetromino: (collidedBottom () || collidedBlockWithBlock()) && !s.gameEnd ? createNewTetromino(s.time, generateTetrominoId()).blocks : s.tetromino.map(b=> {
                 return {
                     ...b,
                     y: collidedBottom() ? (b.y) : (b.y+1)
@@ -75,7 +79,8 @@ class tick implements Action {
             rowToDelete: blocksToDelete(),
             placedTetromino: fixedBlocks(), 
             score: gameEnd() ? s.score : s.score + blocksToDelete().length,
-            highScore: evaluateHighScore()
+            highScore: evaluateHighScore(),
+            seed: RNG.hash(s.seed)
         }
     }
 }
@@ -160,7 +165,7 @@ class MoveRight implements Action {
         /**
          * Takes hash value and scales it to the range [-1, 1]
          */
-        public static scale = (hash: number) => ((hash) / (RNG.m - 1)) * 5 + 1;
+        public static scale = (hash: number) => ((hash) / (RNG.m - 1)) * 5 + 1.5;
       }
 
 export {tick, MoveLeft, MoveRight, Restart, RNG}

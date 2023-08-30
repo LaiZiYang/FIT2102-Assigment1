@@ -46,47 +46,47 @@ export const Block = {
 /** Utility functions */
 export const oTetromino: Tetromino = {
   tetrominoId: 1,
-  blocks: [{id: 0, x: 4, y: -1}, {id: 1, x: 5, y: -1}, {id: 2, x: 4, y: 0}, {id: 3, x: 5, y: 0}]
+  blocks: [{id: 0, x: 4, y: -1, fill: "yellow"}, {id: 1, x: 5, y: -1, fill: "yellow"}, {id: 2, x: 4, y: 0, fill: "yellow"}, {id: 3, x: 5, y: 0, fill: "yellow"}]
 }
 
 export const LTetromino: Tetromino = {
   tetrominoId: 2,
-  blocks: [{id: 0, x: 4, y: -1}, {id: 1, x: 4, y: 0}, {id: 2, x: 4, y: 1}, {id: 3, x: 5, y: 1}]
+  blocks: [{id: 0, x: 4, y: -1, fill: "orange"}, {id: 1, x: 4, y: 0, fill: "orange"}, {id: 2, x: 4, y: 1, fill: "orange"}, {id: 3, x: 5, y: 1, fill: "orange"}]
 }
 
 export const JTetromino: Tetromino = {
   tetrominoId: 3,
-  blocks: [{id: 0, x: 5, y: -1}, {id: 1, x: 5, y: 0}, {id: 2, x: 5, y: 1}, {id: 3, x: 4, y: 1}]
+  blocks: [{id: 0, x: 5, y: -1, fill: "blue"}, {id: 1, x: 5, y: 0, fill: "blue"}, {id: 2, x: 5, y: 1, fill: "blue"}, {id: 3, x: 4, y: 1, fill: "blue"}]
 }
 
 export const lTetromino: Tetromino = {
   tetrominoId: 4,
-  blocks: [{id: 0, x: 4, y: -1}, {id: 1, x: 4, y: 0}, {id: 2, x: 4, y: 1}, {id: 3, x: 4, y: 2}]
+  blocks: [{id: 0, x: 4, y: -1, fill: "cyan"}, {id: 1, x: 4, y: 0, fill: "cyan"}, {id: 2, x: 4, y: 1, fill: "cyan"}, {id: 3, x: 4, y: 2, fill: "cyan"}]
 }
 
 export const sTetromino: Tetromino = {
   tetrominoId: 5,
-  blocks: [{id: 0, x: 5, y: -1}, {id: 1, x: 6, y: -1}, {id: 2, x: 4, y: 0}, {id: 3, x: 5, y: 0}]
+  blocks: [{id: 0, x: 5, y: -1, fill: "green"}, {id: 1, x: 6, y: -1, fill: "green"}, {id: 2, x: 4, y: 0, fill: "green"}, {id: 3, x: 5, y: 0, fill: "green"}]
 }
 
 export const zTetromino: Tetromino = {
   tetrominoId: 6,
-  blocks: [{id: 0, x: 4, y: -1}, {id: 1, x: 5, y: -1}, {id: 2, x: 5, y: 0}, {id: 3, x: 6, y: 0}]
+  blocks: [{id: 0, x: 4, y: -1, fill: "red"}, {id: 1, x: 5, y: -1, fill: "red"}, {id: 2, x: 5, y: 0, fill: "red"}, {id: 3, x: 6, y: 0, fill: "red"}]
 }
   
 
 export const initialState: State = {
   time: 0,
   gameEnd: false,
-  tetromino: oTetromino.blocks,
+  tetromino: JTetromino.blocks,
   placedTetromino: [], 
   rowToDelete: [],
   score: 0,
   highScore: 0,
-  seed: 0
+  seed: new Date().getMilliseconds()
 } as const;
 
-
+export const TetrominoList: ReadonlyArray<Tetromino> = [oTetromino, JTetromino, LTetromino, lTetromino, sTetromino, zTetromino]
 
 /**
  * This is the function called on page load. Your main game loop
@@ -157,7 +157,7 @@ const Action$ = merge(LeftAction, RightActioin, Tick, RestartAction)
    * @param s Current state
    */
   const render = (s: State) => {
-    // levelText.textContent = (String(s.placedTetromino.length))
+    levelText.textContent = (String(s.seed))
     scoreText.textContent = (String(s.score))
     highScoreText.textContent = String(s.highScore)
     // scoreText.textContent = (String(s.placedTetromino.length))
@@ -174,7 +174,7 @@ const Action$ = merge(LeftAction, RightActioin, Tick, RestartAction)
       if (v) {
         v.setAttribute("x", String(Block.WIDTH*b.x))
         v.setAttribute("y", String(Block.HEIGHT*b.y))
-        v.setAttribute("style", "fill: red")
+        v.setAttribute("style", `fill: ${b.fill}`)
       }
     })
     
@@ -186,7 +186,7 @@ const Action$ = merge(LeftAction, RightActioin, Tick, RestartAction)
         width: `${Block.WIDTH}`,
         x: `${Block.WIDTH*block.x}`,
         y: `${Block.HEIGHT*block.y}`,
-        style: "fill: yellow"
+        style: `fill: ${b.fill}`
       })
       v.setAttribute("id", String(block.id))
       svg.appendChild(v)

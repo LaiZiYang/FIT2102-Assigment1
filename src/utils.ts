@@ -1,6 +1,6 @@
 import { State, Action, TetrominoBLocks, Tetromino } from "./types";
 import { createSvgElement } from "./views";
-import { Constants, Block, oTetromino, initialState, TetrominoList } from "./main";
+import { Constants, Block, oTetromino, initialState, TetrominoList, randomTetromino } from "./main";
 
 const svg = document.querySelector("#svgCanvas") as SVGGraphicsElement &
     HTMLElement;
@@ -23,13 +23,13 @@ class tick implements Action {
     apply(s: State): State {
 
         // bottom bound collision verification
-        const getBottomYCoordinate = () => s.tetromino.reduce((m, b) => b.y > m.y ? {...b} : {...m}).y
-        const getAllBottomBlocks = () => s.tetromino.filter((b)=> b.y === getBottomYCoordinate())
+        const getBottomYCoordinate = () => s.tetromino.blocks.reduce((m, b) => b.y > m.y ? {...b} : {...m}).y
+        const getAllBottomBlocks = () => s.tetromino.blocks.filter((b)=> b.y === getBottomYCoordinate())
         const collidedBottomBound = () => getAllBottomBlocks().filter(b=> b.y === 19).length > 0
 
         // block and block collision verification
-        const allBottomAndPlacedBlocks = () => mergeMap(getAllBottomBlocks(), b=> s.placedTetromino.map(p => [b,p]))
-        const collidedBlockWithBlock = () => allBottomAndPlacedBlocks().filter(t => t[0].y+1 === t[1].y && t[0].x == t[1].x).length > 0
+        const allActiveAndPlacedBlocks = () => mergeMap(s.tetromino.blocks, b=> s.placedTetromino.map(p => [b,p]))
+        const collidedBlockWithBlock = () => allActiveAndPlacedBlocks().filter(t => t[0].y+1 === t[1].y && t[0].x == t[1].x).length > 0
 
         // determine if collision happen
         const collidedBottom = () => collidedBottomBound() || collidedBlockWithBlock()
@@ -38,13 +38,10 @@ class tick implements Action {
         const nextTetromino = (id: number) => ({...TetrominoList.reduce((r, t) => t.tetrominoId === id ? t : r)})
         const createNewTetromino = (time: number, id: number): Tetromino => {
             return {...nextTetromino(id), blocks: nextTetromino(id).blocks.reduce((a: ReadonlyArray<TetrominoBLocks>,c:TetrominoBLocks) => a.concat([{...c, id: time + a.length}]), [])}
-            return {...oTetromino, 
-                    blocks: oTetromino.blocks.reduce((a: ReadonlyArray<TetrominoBLocks>,c:TetrominoBLocks) => a.concat([{...c, id: time + a.length}]), [])
-                    }
         }
 
         // functions to handle row deletion
-        const placedBlocks = () => collidedBottom() ? s.placedTetromino.concat(s.tetromino) : s.placedTetromino
+        const placedBlocks = () => collidedBottom() ? s.placedTetromino.concat(s.tetromino.blocks) : s.placedTetromino
         const rowsWithTetromino = () => placedBlocks().reduce((a: ReadonlyArray<number>,b:TetrominoBLocks) => a.includes(b.y) ? a : a.concat([b.y]), [])
         const rowsOfBlocksToBeChecked = () => rowsWithTetromino().map(r=> placedBlocks().filter(b=> b.y === r))
         
@@ -69,12 +66,15 @@ class tick implements Action {
         return {
             ...s,
             gameEnd: gameEnd(), 
-            tetromino: (collidedBottom () || collidedBlockWithBlock()) && !s.gameEnd ? createNewTetromino(s.time, generateTetrominoId()).blocks : s.tetromino.map(b=> {
-                return {
-                    ...b,
-                    y: collidedBottom() ? (b.y) : (b.y+1)
-                }
-            }), 
+            tetromino: (collidedBottom () || collidedBlockWithBlock()) && !s.gameEnd ? createNewTetromino(s.time, generateTetrominoId()) : 
+                                                                                        ({
+                                                                                            ...s.tetromino, 
+                                                                                            blocks: s.tetromino.blocks.map(b=> {return {...b,y: collidedBottom() ? (b.y) : (b.y+1)}}), 
+                                                                                            pivot: ({
+                                                                                                ...s.tetromino.pivot, 
+                                                                                                pivotY: s.tetromino.pivot.pivotY + 1
+                                                                                            })
+                                                                                        }),
             time: this.elapsed,
             rowToDelete: blocksToDelete(),
             placedTetromino: fixedBlocks(), 
@@ -93,22 +93,25 @@ class MoveLeft implements Action {
 
         // left bound collision verification
         const getLeftMostBlock = (tetromino: ReadonlyArray<TetrominoBLocks>) => tetromino.reduce((m, b) => b.x < m.x ? {...b} : {...m})
-        const collidedLeftBound = () => getLeftMostBlock(s.tetromino).x == 0
+        const collidedLeftBound = () => getLeftMostBlock(s.tetromino.blocks).x == 0
         
         // left block with block collision verification
-        const allActiveAndPlacedBlocks = () => mergeMap(s.tetromino, b=> s.placedTetromino.map((p=> [b,p])))
+        const allActiveAndPlacedBlocks = () => mergeMap(s.tetromino.blocks, b=> s.placedTetromino.map((p=> [b,p])))
         const collidedBlockWithBlock = () => allActiveAndPlacedBlocks().filter(t => t[0].x-1 == t[1].x && t[0].y == t[1].y).length > 0
         const collidedLeft = () => collidedLeftBound() || collidedBlockWithBlock()
         
         // return new state
         return {
             ...s,
-            tetromino: collidedLeft() ? s.tetromino : s.tetromino.map(b=> {
-                return {
-                    ...b,
-                    x: b.x+this.changes
-                }
-            })
+            tetromino: collidedLeft() ? s.tetromino : 
+                                        {
+                                            ...s.tetromino, 
+                                            blocks: s.tetromino.blocks.map(b=> ({...b, x: b.x + this.changes})), 
+                                            pivot: ({
+                                                ...s.tetromino.pivot, 
+                                                pivotX: s.tetromino.pivot.pivotX + this.changes
+                                            })
+                                        }
         }
     }
 }
@@ -119,22 +122,25 @@ class MoveRight implements Action {
 
         // right bound collision verification
         const getRightmostBlock = (tetromino: ReadonlyArray<TetrominoBLocks>) => tetromino.reduce((m, b) => b.x > m.x ? {...b} : {...m})
-        const collidedRightBound = () => getRightmostBlock(s.tetromino).x == 9
+        const collidedRightBound = () => getRightmostBlock(s.tetromino.blocks).x == 9
 
         // right block with block collision verification
-        const allActiveAndPlacedBlocks = () => mergeMap(s.tetromino, b=> s.placedTetromino.map((p=> [b,p])))
+        const allActiveAndPlacedBlocks = () => mergeMap(s.tetromino.blocks, b=> s.placedTetromino.map((p=> [b,p])))
         const collidedBlockWithBlock = () => allActiveAndPlacedBlocks().filter(t => t[0].x+1 == t[1].x && t[0].y == t[1].y).length > 0
         const collidedRight = () => collidedRightBound() || collidedBlockWithBlock()
         
         // return new state
         return {
             ...s,
-            tetromino: collidedRight() ? s.tetromino : s.tetromino.map(b=> {
-                return {
-                    ...b,
-                    x: b.x+this.changes
-                }
-            })
+            tetromino: collidedRight() ? s.tetromino : 
+                                        {
+                                            ...s.tetromino, 
+                                            blocks: s.tetromino.blocks.map(b=> ({...b, x: b.x + this.changes})), 
+                                            pivot: ({
+                                                ...s.tetromino.pivot, 
+                                                pivotX: s.tetromino.pivot.pivotX + this.changes
+                                            })
+                                        }
         }
     }
 }
@@ -144,8 +150,30 @@ class MoveRight implements Action {
         apply(s: State):State {
             return {
                 ...initialState,
-                rowToDelete: s.tetromino.concat(s.placedTetromino),
-                highScore: s.highScore
+                rowToDelete: s.tetromino.blocks.concat(s.placedTetromino),
+                highScore: s.highScore,
+                tetromino: randomTetromino(new Date().getMilliseconds())
+            }
+        }
+    }
+
+    class Rotate implements Action {
+        constructor () {}
+
+        apply(s: State):State {
+            const rotate = (deg:number, tetrominoBlock: TetrominoBLocks) =>
+            (rad =>(
+                (cos,sin,{x,y})=> ({...tetrominoBlock, x: ((x-s.tetromino.pivot.pivotX)*cos - (y-s.tetromino.pivot.pivotY)*sin) + s.tetromino.pivot.pivotX, 
+                                                       y: ((x-s.tetromino.pivot.pivotX)*sin + (y-s.tetromino.pivot.pivotY)*cos) + s.tetromino.pivot.pivotY}) //Vec(x*cos - y*sin, x*sin + y*cos)
+              )(Math.cos(rad), Math.sin(rad), tetrominoBlock)
+            )(Math.PI * deg / 180)
+            
+            const rotateBlocks = () => ({...s.tetromino, blocks: s.tetromino.blocks.map(b=> rotate(90, b))})
+
+
+            return {
+                ...s, 
+                tetromino: rotateBlocks()
             }
         }
     }
@@ -168,4 +196,4 @@ class MoveRight implements Action {
         public static scale = (hash: number) => ((hash) / (RNG.m - 1)) * 5 + 1.5;
       }
 
-export {tick, MoveLeft, MoveRight, Restart, RNG}
+export {tick, MoveLeft, MoveRight, Restart, RNG, Rotate}

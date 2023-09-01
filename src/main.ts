@@ -18,7 +18,7 @@ import { fromEvent, interval, merge } from "rxjs";
 import { map, filter, scan } from "rxjs/operators";
 import { Event, State, Key, TetrominoBLocks, Action, Tetromino } from "./types";
 import { hide, show, createSvgElement } from "./views";
-import { tick, MoveLeft, MoveRight, Restart } from "./utils";
+import { tick, MoveLeft, MoveRight, Restart, Rotate, RNG } from "./utils";
 import { tick$ } from "./observables";
 
 /** Constants */
@@ -46,39 +46,46 @@ export const Block = {
 /** Utility functions */
 export const oTetromino: Tetromino = {
   tetrominoId: 1,
-  blocks: [{id: 0, x: 4, y: -1, fill: "yellow"}, {id: 1, x: 5, y: -1, fill: "yellow"}, {id: 2, x: 4, y: 0, fill: "yellow"}, {id: 3, x: 5, y: 0, fill: "yellow"}]
+  blocks: [{id: 0, x: 4, y: -1, fill: "yellow"}, {id: 1, x: 5, y: -1, fill: "yellow"}, {id: 2, x: 4, y: 0, fill: "yellow"}, {id: 3, x: 5, y: 0, fill: "yellow"}],
+  pivot: {pivotX: 4.5, pivotY: -0.5}
 }
 
 export const LTetromino: Tetromino = {
   tetrominoId: 2,
-  blocks: [{id: 0, x: 4, y: -1, fill: "orange"}, {id: 1, x: 4, y: 0, fill: "orange"}, {id: 2, x: 4, y: 1, fill: "orange"}, {id: 3, x: 5, y: 1, fill: "orange"}]
+  blocks: [{id: 0, x: 4, y: -1, fill: "orange"}, {id: 1, x: 4, y: 0, fill: "orange"}, {id: 2, x: 4, y: 1, fill: "orange"}, {id: 3, x: 5, y: 1, fill: "orange"}],
+  pivot: {pivotX: 4, pivotY: 0}
 }
 
 export const JTetromino: Tetromino = {
   tetrominoId: 3,
-  blocks: [{id: 0, x: 5, y: -1, fill: "blue"}, {id: 1, x: 5, y: 0, fill: "blue"}, {id: 2, x: 5, y: 1, fill: "blue"}, {id: 3, x: 4, y: 1, fill: "blue"}]
+  blocks: [{id: 0, x: 5, y: -1, fill: "blue"}, {id: 1, x: 5, y: 0, fill: "blue"}, {id: 2, x: 5, y: 1, fill: "blue"}, {id: 3, x: 4, y: 1, fill: "blue"}],
+  pivot: {pivotX: 5, pivotY: 0}
 }
 
 export const lTetromino: Tetromino = {
   tetrominoId: 4,
-  blocks: [{id: 0, x: 4, y: -1, fill: "cyan"}, {id: 1, x: 4, y: 0, fill: "cyan"}, {id: 2, x: 4, y: 1, fill: "cyan"}, {id: 3, x: 4, y: 2, fill: "cyan"}]
+  blocks: [{id: 0, x: 4, y: -1, fill: "cyan"}, {id: 1, x: 4, y: 0, fill: "cyan"}, {id: 2, x: 4, y: 1, fill: "cyan"}, {id: 3, x: 4, y: 2, fill: "cyan"}],
+  pivot: {pivotX: 3.5, pivotY: 0.5}
 }
 
 export const sTetromino: Tetromino = {
   tetrominoId: 5,
-  blocks: [{id: 0, x: 5, y: -1, fill: "green"}, {id: 1, x: 6, y: -1, fill: "green"}, {id: 2, x: 4, y: 0, fill: "green"}, {id: 3, x: 5, y: 0, fill: "green"}]
+  blocks: [{id: 0, x: 5, y: -1, fill: "green"}, {id: 1, x: 6, y: -1, fill: "green"}, {id: 2, x: 4, y: 0, fill: "green"}, {id: 3, x: 5, y: 0, fill: "green"}],
+  pivot: {pivotX: 5, pivotY: 0}
 }
 
 export const zTetromino: Tetromino = {
   tetrominoId: 6,
-  blocks: [{id: 0, x: 4, y: -1, fill: "red"}, {id: 1, x: 5, y: -1, fill: "red"}, {id: 2, x: 5, y: 0, fill: "red"}, {id: 3, x: 6, y: 0, fill: "red"}]
+  blocks: [{id: 0, x: 4, y: -1, fill: "red"}, {id: 1, x: 5, y: -1, fill: "red"}, {id: 2, x: 5, y: 0, fill: "red"}, {id: 3, x: 6, y: 0, fill: "red"}],
+  pivot: {pivotX: 5, pivotY: 0}
 }
-  
 
+export const TetrominoList: ReadonlyArray<Tetromino> = [oTetromino, JTetromino, LTetromino, lTetromino, sTetromino, zTetromino]
+export const randomTetromino = (seed: number) => ({...TetrominoList.reduce((r, t) => t.tetrominoId === Math.floor(RNG.scale(RNG.hash(seed))) ? t : r)})
 export const initialState: State = {
   time: 0,
   gameEnd: false,
-  tetromino: JTetromino.blocks,
+  tetromino: randomTetromino(new Date().getMilliseconds()),
   placedTetromino: [], 
   rowToDelete: [],
   score: 0,
@@ -86,7 +93,7 @@ export const initialState: State = {
   seed: new Date().getMilliseconds()
 } as const;
 
-export const TetrominoList: ReadonlyArray<Tetromino> = [oTetromino, JTetromino, LTetromino, lTetromino, sTetromino, zTetromino]
+
 
 /**
  * This is the function called on page load. Your main game loop
@@ -123,6 +130,7 @@ export function main() {
 
   const left$ = fromKey("KeyA");
   const right$ = fromKey("KeyD");
+  const rotate$ = fromKey("KeyW")
   const down$ = fromKey("KeyS");
   const restart$ = fromEvent(restart, "click")
 
@@ -135,6 +143,10 @@ const RightActioin = right$.pipe(
   map(_=> new MoveRight(1))
 )
 
+const RotateAction = rotate$.pipe(
+  map(_=> new Rotate())
+)
+
 const Tick = interval(Constants.TICK_RATE_MS).pipe(
   map(elapsed=> new tick(elapsed))
 )
@@ -143,7 +155,7 @@ const RestartAction = restart$.pipe(
   map(_=> new Restart())
 )
 
-const Action$ = merge(LeftAction, RightActioin, Tick, RestartAction)
+const Action$ = merge(LeftAction, RightActioin, Tick, RestartAction, RotateAction)
 
 
   /** Determines the rate of time steps */
@@ -179,7 +191,7 @@ const Action$ = merge(LeftAction, RightActioin, Tick, RestartAction)
     })
     
 
-    s.tetromino.forEach(b=> {
+    s.tetromino.blocks.forEach(b=> {
     const createBlock = (block: TetrominoBLocks) => {
       const v = createSvgElement(svg.namespaceURI, "rect", {
         height: `${Block.HEIGHT}`,

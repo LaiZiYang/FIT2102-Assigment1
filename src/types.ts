@@ -2,14 +2,14 @@ import { Constants } from "./main";
 
 /** User input */
 
-export type Key = "KeyS" | "KeyA" | "KeyD";
+export type Key = "KeyS" | "KeyA" | "KeyD" | "KeyW";
 
 export type Event = "keydown" | "keyup" | "keypress";
 
 export type State = Readonly<{
   time: number;
   gameEnd: boolean;
-  tetromino: ReadonlyArray<TetrominoBLocks>
+  tetromino: Tetromino
   placedTetromino: ReadonlyArray<TetrominoBLocks>
   rowToDelete: ReadonlyArray<TetrominoBLocks>
   score: number
@@ -27,6 +27,7 @@ export type TetrominoBLocks = Readonly<{
 export type Tetromino = Readonly<{
   tetrominoId: number
   blocks: ReadonlyArray<TetrominoBLocks>
+  pivot: Readonly<{pivotX: number, pivotY: number}>
 }>
 
 export interface Action {

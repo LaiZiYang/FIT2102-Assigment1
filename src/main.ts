@@ -18,8 +18,7 @@ import { fromEvent, interval, merge } from "rxjs";
 import { map, filter, scan } from "rxjs/operators";
 import { Event, State, Key, TetrominoBLocks, Action, Tetromino } from "./types";
 import { hide, show, createSvgElement } from "./views";
-import { tick, MoveLeft, MoveRight, Restart, Rotate, RNG } from "./utils";
-import { tick$ } from "./observables";
+import { tick, MoveLeft, MoveRight, Restart, Rotate, RNG } from "./states";
 
 /** Constants */
 
@@ -31,7 +30,7 @@ const Viewport = {
 } as const;
 
 export const Constants = {
-  TICK_RATE_MS: 100,
+  TICK_RATE_MS: 250,
   GRID_WIDTH: 10,
   GRID_HEIGHT: 20,
 } as const;
@@ -43,7 +42,7 @@ export const Block = {
 
 
 
-/** Utility functions */
+/** define each tetromino with their initial coordinates when they spawn */
 export const oTetromino: Tetromino = {
   tetrominoId: 1,
   blocks: [{id: 0, x: 4, y: -1, fill: "yellow"}, {id: 1, x: 5, y: -1, fill: "yellow"}, {id: 2, x: 4, y: 0, fill: "yellow"}, {id: 3, x: 5, y: 0, fill: "yellow"}],
@@ -80,8 +79,13 @@ export const zTetromino: Tetromino = {
   pivot: {pivotX: 5, pivotY: 0}
 }
 
+/** make a list of all tetromino types, to be used to select tetromino to spawn */
 export const TetrominoList: ReadonlyArray<Tetromino> = [oTetromino, JTetromino, LTetromino, lTetromino, sTetromino, zTetromino]
+
+/** function to select random tetromino */
 export const randomTetromino = (seed: number) => ({...TetrominoList.reduce((r, t) => t.tetrominoId === Math.floor(RNG.scale(RNG.hash(seed))) ? t : r)})
+
+/** define the initial state */
 export const initialState: State = {
   time: 0,
   gameEnd: false,
@@ -121,8 +125,9 @@ export function main() {
   const levelText = document.querySelector("#levelText") as HTMLElement;
   const scoreText = document.querySelector("#scoreText") as HTMLElement;
   const highScoreText = document.querySelector("#highScoreText") as HTMLElement;
+  
+  
   /** User input */
-
   const key$ = fromEvent<KeyboardEvent>(document, "keypress");
 
   const fromKey = (keyCode: Key) =>
@@ -135,31 +140,28 @@ export function main() {
   const restart$ = fromEvent(restart, "click")
 
   /** Observables */
-const LeftAction = left$.pipe(
-  map(_=> new MoveLeft(-1))
-)
+  /** Create stream of Action objects for each tick and user input */
+  const LeftAction = left$.pipe(
+    map(_=> new MoveLeft(-1))
+  )
 
-const RightActioin = right$.pipe(
-  map(_=> new MoveRight(1))
-)
+  const RightActioin = right$.pipe(
+    map(_=> new MoveRight(1))
+  )
 
-const RotateAction = rotate$.pipe(
-  map(_=> new Rotate())
-)
+  const RotateAction = rotate$.pipe(
+    map(_=> new Rotate())
+  )
 
-const Tick = interval(Constants.TICK_RATE_MS).pipe(
-  map(elapsed=> new tick(elapsed))
-)
+  const Tick = interval(Constants.TICK_RATE_MS).pipe(
+    map(elapsed=> new tick(elapsed))
+  )
 
-const RestartAction = restart$.pipe(
-  map(_=> new Restart())
-)
-
-const Action$ = merge(LeftAction, RightActioin, Tick, RestartAction, RotateAction)
-
-
-  /** Determines the rate of time steps */
-  const tick$ = interval(Constants.TICK_RATE_MS);
+  const RestartAction = restart$.pipe(
+    map(_=> new Restart())
+  )
+  /** merge all Action streams togather */
+  const Action$ = merge(LeftAction, RightActioin, Tick, RestartAction, RotateAction)
 
   /**
    * Renders the current state to the canvas.
@@ -169,18 +171,18 @@ const Action$ = merge(LeftAction, RightActioin, Tick, RestartAction, RotateActio
    * @param s Current state
    */
   const render = (s: State) => {
-    levelText.textContent = (String(s.seed))
     scoreText.textContent = (String(s.score))
     highScoreText.textContent = String(s.highScore)
-    // scoreText.textContent = (String(s.placedTetromino.length))
+    levelText.textContent = String(s.gameEnd)
     
+    /** delete rows */
     s.rowToDelete.forEach(b=> {
       const v = document.getElementById(String(b.id))
       
       if(v) {svg.removeChild(v) }
-      // if(v) v.setAttribute("style", "fill: black")
     })
 
+    /** render the placed tetromino */
     s.placedTetromino.forEach(b=> {
       const v = document.getElementById(String(b.id))
       if (v) {
@@ -190,29 +192,36 @@ const Action$ = merge(LeftAction, RightActioin, Tick, RestartAction, RotateActio
       }
     })
     
-
+    /** render the position of the active tetromino or create a new tetromino after previous one is placed */
     s.tetromino.blocks.forEach(b=> {
-    const createBlock = (block: TetrominoBLocks) => {
-      const v = createSvgElement(svg.namespaceURI, "rect", {
-        height: `${Block.HEIGHT}`,
-        width: `${Block.WIDTH}`,
-        x: `${Block.WIDTH*block.x}`,
-        y: `${Block.HEIGHT*block.y}`,
-        style: `fill: ${b.fill}`
-      })
-      v.setAttribute("id", String(block.id))
-      svg.appendChild(v)
-      return v
-      }
 
+      /** function to render a new tetromino */
+      const createBlock = (block: TetrominoBLocks) => {
+        const v = createSvgElement(svg.namespaceURI, "rect", {
+          height: `${Block.HEIGHT}`,
+          width: `${Block.WIDTH}`,
+          x: `${Block.WIDTH*block.x}`,
+          y: `${Block.HEIGHT*block.y}`,
+          style: `fill: ${b.fill}`
+        })
+        v.setAttribute("id", String(block.id))
+        svg.appendChild(v)
+        return v
+        }
+      
+      /** try to get the active tetromino */
       const v = document.getElementById(String(b.id))
-      if (!v) {createBlock(b)} else {
+
+      /** if the active tetromino has not yet been created in the svg, create one, otherwise render it with its position */
+      if (!v) {
+        createBlock(b)
+      } else {
         v.setAttribute("x", String(Block.WIDTH*b.x))
-      v.setAttribute("y", String(Block.HEIGHT*b.y))
+        v.setAttribute("y", String(Block.HEIGHT*b.y))
       }
 
       
-      })
+    })
     
   }
     

@@ -244,12 +244,12 @@ class Rotate implements Action {
         const wallkickCollision = () => mergeMap(updateCoordinate().blocks, b=> s.placedTetromino.map(p=> [b,p])).filter((t: ReadonlyArray<TetrominoBLocks>)=> (t[0].y === t[1].y && t[0].x === t[1].x)).length > 0
         const boundaryCollision = () => updateCoordinate().blocks.filter(b=> b.x < 0 || b.x > 9 || b.y > 19).length > 0
         const collision = () => wallkickCollision() || boundaryCollision()
-        const finalrotate = () => collision() ? s.tetromino : updateCoordinate()
+        const rotateTetromino = () => collision() ? s.tetromino : updateCoordinate()
 
 
         return {
             ...s, 
-            tetromino: finalrotate()
+            tetromino: rotateTetromino()
         }
     }
 }

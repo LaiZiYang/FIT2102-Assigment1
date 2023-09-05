@@ -12,6 +12,7 @@ const mergeMap = <T, U>(
     f: (a: T) => ReadonlyArray<U>
   ) => Array.prototype.concat(...a.map(f))
 
+
 /** State processing */
 
 /**
@@ -148,10 +149,10 @@ class MoveLeft implements Action {
         const collidedBlockWithBlock = () => allActiveAndPlacedBlocks().filter(t => t[0].x-1 == t[1].x && t[0].y == t[1].y).length > 0
 
         // verify if collision happen
-        const collidedLeft = () => collidedLeftBound() || collidedBlockWithBlock()
+        const unableToMoveLeft = () => collidedLeftBound() || collidedBlockWithBlock() || s.gameEnd
 
         // move tetromino left
-        const moveTetrominoLeft = () => collidedLeft() ? s.tetromino : 
+        const moveTetrominoLeft = () => unableToMoveLeft() ? s.tetromino : 
         {
             ...s.tetromino, 
             blocks: s.tetromino.blocks.map(b=> ({...b, x: b.x + this.changes})), 
@@ -187,23 +188,47 @@ class MoveRight implements Action {
         // right block with block collision verification
         const allActiveAndPlacedBlocks = () => mergeMap(s.tetromino.blocks, b=> s.placedTetromino.map((p=> [b,p])))
         const collidedBlockWithBlock = () => allActiveAndPlacedBlocks().filter(t => t[0].x+1 == t[1].x && t[0].y == t[1].y).length > 0
-        const collidedRight = () => collidedRightBound() || collidedBlockWithBlock()
+        const unableToMoveRight = () => collidedRightBound() || collidedBlockWithBlock() || s.gameEnd
 
         // move the tetromino right
-        const moveTetrominoRight = () => collidedRight() ? s.tetromino : 
-        {
-            ...s.tetromino, 
-            blocks: s.tetromino.blocks.map(b=> ({...b, x: b.x + this.changes})), 
-            pivot: ({
-                ...s.tetromino.pivot, 
-                pivotX: s.tetromino.pivot.pivotX + this.changes
-            })
-        }
+        const moveTetrominoRight = () => unableToMoveRight() ? s.tetromino : 
+                                                                {...s.tetromino, 
+                                                                    blocks: s.tetromino.blocks.map(b=> ({...b, x: b.x + this.changes})), 
+                                                                    pivot: ({
+                                                                        ...s.tetromino.pivot, 
+                                                                        pivotX: s.tetromino.pivot.pivotX + this.changes
+                                                                    })}
         
         // return new state
         return {
             ...s,
             tetromino: moveTetrominoRight()
+        }
+    }
+}
+
+class MoveDown implements Action {
+    constructor() {}
+    apply(s: State): State{
+        // right bound collision verification
+        const getBottomBlock = (tetromino: ReadonlyArray<TetrominoBLocks>) => tetromino.reduce((m, b) => b.y > m.y ? {...b} : {...m})
+        const bottomCollision = () => getBottomBlock(s.tetromino.blocks).y == 19
+
+        // right block with block collision verification
+        const allActiveAndPlacedBlocks = () => mergeMap(s.tetromino.blocks, b=> s.placedTetromino.map((p=> [b,p])))
+        const collidedBlockWithBlock = () => allActiveAndPlacedBlocks().filter(t => t[0].x == t[1].x && t[0].y+1 == t[1].y).length > 0
+        const moveTetrominoDown = () => unableToMoveDown() ? s.tetromino : ({
+            ...s.tetromino, 
+            blocks: s.tetromino.blocks.map(b=> ({...b, y: b.y + 1})), 
+            pivot: ({
+                ...s.tetromino.pivot, 
+                pivotY: s.tetromino.pivot.pivotY + 1
+            })
+        })
+        const unableToMoveDown = () => bottomCollision() || collidedBlockWithBlock() || s.gameEnd
+        return {
+            ...s,
+            tetromino: moveTetrominoDown()
         }
     }
 }
@@ -254,20 +279,25 @@ class Rotate implements Action {
         )(Math.PI * deg / 180)
         
         // function that apply the rotation matrix onto each blocks
-        const updateCoordinate = () => ({...s.tetromino, blocks: s.tetromino.blocks.map(b=> getNewCoordinate(90, b))})
+        const updateCoordinate = () => ({
+            ...s.tetromino, 
+            blocks: s.tetromino.blocks.map(b=> getNewCoordinate(90, b))
+        })
 
         // verify if there is invalid rotation
-        const wallkickCollision = () => mergeMap(updateCoordinate().blocks, b=> s.placedTetromino.map(
+        const blockWithBlockCollision = () => mergeMap(updateCoordinate().blocks, b=> s.placedTetromino.map(
             p=> [b,p])
             ).filter(
                 (t: ReadonlyArray<TetrominoBLocks>)=> (t[0].y === t[1].y && t[0].x === t[1].x)
                 ).length > 0
-        const boundaryCollision = () => updateCoordinate().blocks.filter(b=> b.x < 0 || b.x > 9 || b.y > 19).length > 0
-        const collision = () => wallkickCollision() || boundaryCollision()
+        const boundaryCollision = () => updateCoordinate().blocks.filter(
+            b=> b.x < 0 || b.x > 9 || b.y > 19
+            ).length > 0
+        const collision = () => blockWithBlockCollision() || boundaryCollision()
 
         // apply rotation if the rotation is valid
         const rotateTetromino = () => collision() ? s.tetromino : updateCoordinate()
-
+     
 
         return {
             ...s, 
@@ -298,4 +328,4 @@ abstract class RNG {
     public static scale = (hash: number) => ((hash) / (RNG.m - 1)) * 5 + 1.5;
     }
 
-export {tick, MoveLeft, MoveRight, Restart, RNG, Rotate}
+export {tick, MoveLeft, MoveRight, Restart, RNG, Rotate, MoveDown}

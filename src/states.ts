@@ -24,6 +24,15 @@ class tick implements Action {
     constructor(public readonly elapsed:number){}
     apply(s: State): State {
 
+        // function to make the tetromino drop vertically
+        const dropTetromino = () => ({
+            ...s.tetromino, 
+            blocks: s.tetromino.blocks.map(b=> {return {...b,y: collidedBottom() ? (b.y) : (b.y+1)}}), // update the y coordinate to make it fall for each tick
+            pivot: ({
+                ...s.tetromino.pivot, 
+                pivotY: s.tetromino.pivot.pivotY + 1 // we also have to update the pivot so that it always at the center of the tetromino
+            })
+        })
         // bottom bound collision verification
         ////// get the bottom y-coordinate of the active tetromino, and use that coordinate to get all bottom blocks of the tetromino, 
         ////// and finally check if any of them hit the bottom boundary
@@ -50,10 +59,10 @@ class tick implements Action {
         ////// a function to create new tetromino, using time as id for each of the tetromino blocks.
         ////// - the id is times 10 to ensure that we do not create multiple blocks with the same id.
         ////// - the id is added with the length of the accumulated array to create unique id for each of the blocks
-        const createNewTetromino = (time: number, id: number): Tetromino => {
+        const createNewTetromino = (time: number, blockType: String,id: number): Tetromino => {
             return {
                 ...nextTetromino(id), 
-                blocks: nextTetromino(id).blocks.reduce((a: ReadonlyArray<TetrominoBLocks>,c:TetrominoBLocks) => a.concat([{...c, id: time*10 + a.length}]), []) 
+                blocks: nextTetromino(id).blocks.reduce((a: ReadonlyArray<TetrominoBLocks>,c:TetrominoBLocks) => a.concat([{...c, id: blockType + String(time*10) + a.length}]), []) 
             }
         }
 
@@ -101,19 +110,16 @@ class tick implements Action {
         return {
             ...s,
             gameEnd: gameEnd(), 
-            tetromino: (collidedBottom () || collidedBlockWithBlock()) && (!gameEnd()) ? createNewTetromino(s.time, generateTetrominoId()) : 
-                                                                                        ({
-                                                                                            ...s.tetromino, 
-                                                                                            blocks: s.tetromino.blocks.map(b=> {return {...b,y: collidedBottom() ? (b.y) : (b.y+1)}}), // update the y coordinate to make it fall for each tick
-                                                                                            pivot: ({
-                                                                                                ...s.tetromino.pivot, 
-                                                                                                pivotY: s.tetromino.pivot.pivotY + 1 // we also have to update the pivot so that it always at the center of the tetromino
-                                                                                            })
-                                                                                        }),
+            tetromino: collidedBottom () && !s.gameEnd ? createNewTetromino(s.time, "active", s.nextTetromino.tetrominoId) : 
+                                                         dropTetromino(),
             time: this.elapsed,
+            nextTetromino: collidedBottom() && !s.gameEnd ? createNewTetromino(s.time,"preview", generateTetrominoId()) : 
+                                              s.nextTetromino,
             rowToDelete: blocksToDelete(),
+            previewToDelete: collidedBottom() ? s.nextTetromino.blocks : [],
             placedTetromino: fixedBlocks(), 
-            score: gameEnd() ? s.score : s.score + blocksToDelete().length,
+            score: gameEnd() ? s.score : 
+                               s.score + blocksToDelete().length,
             highScore: evaluateHighScore(),
             seed: RNG.hash(s.seed)
         }
@@ -162,6 +168,7 @@ class MoveLeft implements Action {
         }
     }
 }
+
 
 /**
  * Move the active tetromino right.
@@ -218,7 +225,8 @@ class Restart implements Action {
             ...initialState,
             rowToDelete: s.tetromino.blocks.concat(s.placedTetromino),
             highScore: s.highScore,
-            tetromino: randomTetromino(new Date().getMilliseconds())
+            tetromino: randomTetromino(new Date().getMilliseconds()),
+            previewToDelete: s.nextTetromino.blocks
         }
     }
 }

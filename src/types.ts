@@ -10,15 +10,17 @@ export type State = Readonly<{
   time: number;
   gameEnd: boolean;
   tetromino: Tetromino
+  nextTetromino: Tetromino
   placedTetromino: ReadonlyArray<TetrominoBLocks>
   rowToDelete: ReadonlyArray<TetrominoBLocks>
+  previewToDelete: ReadonlyArray<TetrominoBLocks>
   score: number
   highScore: number
   seed: number
 }>;
 
 export type TetrominoBLocks = Readonly<{
-  id: number
+  id: String
   x: number
   y: number
   fill: string

@@ -18,7 +18,7 @@ import { fromEvent, interval, merge } from "rxjs";
 import { map, filter, scan } from "rxjs/operators";
 import { Event, State, Key, TetrominoBLocks, Action, Tetromino } from "./types";
 import { hide, show, createSvgElement } from "./views";
-import { tick, MoveLeft, MoveRight, Restart, Rotate, RNG } from "./states";
+import { tick, MoveLeft, MoveRight, Restart, Rotate, RNG, MoveDown } from "./states";
 
 /** Constants */
 
@@ -155,6 +155,10 @@ export function main() {
     map(_=> new Rotate())
   )
 
+  const DownAction = down$.pipe(
+    map(_=> new MoveDown())
+  )
+
   const Tick = interval(Constants.TICK_RATE_MS).pipe(
     map(elapsed=> new tick(elapsed))
   )
@@ -163,7 +167,7 @@ export function main() {
     map(_=> new Restart())
   )
   /** merge all Action streams togather */
-  const Action$ = merge(LeftAction, RightActioin, Tick, RestartAction, RotateAction)
+  const Action$ = merge(LeftAction, RightActioin, Tick, RestartAction, RotateAction, DownAction)
 
   /**
    * Renders the current state to the canvas.
